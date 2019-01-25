@@ -6,6 +6,7 @@
     </head>
     <body>
 		<canvas id="canvas" style="background: grey;"></canvas>
+		<div>Permutation #<span id="permnum"></span></div>
 		<script src="renderer.js"></script>
 		<script src="solver.js"></script>
 		
@@ -23,6 +24,12 @@
 			];
 			var renderer = new SudokuCanvasRenderer(document.getElementById('canvas'), 300);
 			var solver = new SudokuSolver(renderer, board);
+//			var permnum = document.getElementById('permnum');
+//			var loop=()=>setTimeout(()=>{
+//				permnum.innerText = solver.permutation;
+//				if(!solver.checkNext()) loop();
+//			}, 2);
+//			///loop();
 		</script>
     </body>
 </html>

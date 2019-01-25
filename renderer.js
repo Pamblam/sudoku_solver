@@ -12,6 +12,7 @@ class SudokuCanvasRenderer{
 		
 	}
 	draw(cells){
+		this.ctx.clearRect(0, 0, this.width, this.width);
 		this.ctx.lineWidth = 2;
 		this.ctx.strokeStyle = 'black';
 		var boardsize = this.width-(this.margin*2);
@@ -30,7 +31,8 @@ class SudokuCanvasRenderer{
 			});
 		});
 	}
-	drawNumber(gx, gy, char){
+	drawNumber(gx, gy, char, color='black'){
+		this.ctx.fillStyle = color;
 		var cellwidth = (this.width-(this.margin*2))/9;
 		var cellposition_x = (gx*cellwidth)+this.margin;
 		var cellposition_y = (gy*cellwidth)+this.margin;

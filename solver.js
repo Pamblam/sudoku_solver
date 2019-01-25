@@ -2,17 +2,11 @@
 class SudokuSolver{
 	constructor(renderer, board){
 		this.renderer = renderer;
-		this.board = board;
-		this.possibilities = [];
-		this.divisors = [];
-		renderer.draw(board);
-		this.generateCellPossibilities();
-		this.calculateDivisors();
-	}
-	calculateDivisors(){
-		for (var i = this.possibilities.length - 1; i >= 0; i--) {
-			this.divisors[i] = this.divisors[i + 1] ? this.divisors[i + 1] * this.possibilities[i + 1].length : 1;
-		}
+		this.original_board = board.slice();
+		this.board = board.slice().map(row=>row.slice());
+		this.row = 0;
+		this.col = 0;
+		this.draw(board);
 	}
 	getSubgridPosFromCell(x, y){
 		var getPos = n=>n<3?0:n>2&&n<6?1:2;
@@ -24,10 +18,9 @@ class SudokuSolver{
 		var ys = getPos(y);
 		return xs.map(x=>ys.map(y=>[x,y])).flat();
 	}
-	getNumbersInSubgrid(x, y, board){
-		if(!board) board = this.board;
+	getNumbersInSubgrid(x, y){
 		return this.getCellsInSubgrid(x, y)
-			.map(coords=>board[coords[1]][coords[0]])
+			.map(coords=>this.board[coords[1]][coords[0]])
 			.filter(value=>value!==null);
 	}
 	getNumbersInRow(y){
@@ -36,45 +29,71 @@ class SudokuSolver{
 	getNumbersInColumn(x){
 		return this.board.map(row=>row[x]).filter(value=>value!==null);
 	}
-	getPossibleNumbersForCell(x, y){
-		var used = [], avail = [];
-		var subgridPosition = this.getSubgridPosFromCell(x, y);
-		used.push(...this.getNumbersInSubgrid(subgridPosition[0], subgridPosition[1]));
-		used.push(...this.getNumbersInColumn(x));
-		used.push(...this.getNumbersInRow(y));
-		for(var i=1; i<10; i++) if(!~used.indexOf(i)) avail.push(i);
-		return avail;
+	validateSubgrid(col, row){
+		var gridPos = this.getSubgridPosFromCell(col, row);
+		var grid = this.getNumbersInSubgrid(gridPos[0], gridPos[1]);
+		return grid.length === [...new Set(grid)].length;
 	}
-	generateCellPossibilities(){
-		for(var y=0; y<9; y++){
+	validateRow(y){
+		var row = this.board[y].filter(m=>m!==null);
+		return row.length === [...new Set(row)].length;
+	}
+	validateCol(x){
+		var col = this.board.map(row=>row[x]).filter(m=>m!==null);
+		return col.length === [...new Set(col)].length;
+	}
+	isFixedNumber(x, y){
+		return this.original_board[y][x] !== null;
+	}
+	advance(){
+		if(this.col === 8){
+			this.col = 0;
+			this.row++;
+		}else this.col++;
+		if(this.isFixedNumber(this.col, this.row)){
+			this.advance();
+		}
+	}
+	rewind(){
+		this.board[this.row][this.col] = null;
+		if(this.col === 0){
+			this.col = 8;
+			this.row--;
+		}else this.col--;
+		if(this.isFixedNumber(this.col, this.row)){
+			this.rewind();
+		}
+	}
+	increment(){
+		this.board[this.row][this.col] = (this.board[this.row][this.col]||0)+1;
+		if(this.board[this.row][this.col] === 10){
+			this.rewind();
+			this.increment();
+		}
+	}
+	validateCurrentCell(){
+		return this.validateRow(this.row) && this.validateCol(this.col) && this.validateSubgrid(this.col, this.row);
+	}
+	checkNext(){
+		if(null === this.board[this.row][this.col]) this.increment();
+		if(this.validateCurrentCell()){ 
+			this.draw();
+			if(this.col === 8 && this.row === 8) return true;
+			this.advance();
+		}else{
+			this.draw();
+			this.increment();
+		}
+		return false;
+	}
+	draw(){
+		this.renderer.draw(this.original_board);
+		for(var y = 0; y<9; y++){
 			for(var x=0; x<9; x++){
-				this.possibilities.push(null === this.board[y][x] ? 
-					this.getPossibleNumbersForCell(x, y):
-					[this.board[y][x]]);
-			}
-		}
-	}
-	getPermutation(n) {
-		var result = "", curArray;
-		for (var i = 0; i < this.possibilities.length; i++) {
-			curArray = this.possibilities[i];
-			result += curArray[Math.floor(n / this.divisors[i]) % curArray.length];
-		}
-		return result.match(/.{1,9}/g).map(row=>row.split(''));
-	}
-	validateSubgrid(x, y, board){
-		var numbers = getNumbersInSubgrid(x, y, board);
-		return [...new Set(numbers)].length === 9;
-	}
-	validateBoard(board){
-		for(var y=0; y<3; y++){
-			for(var x=0; x<3; x++){
-				if(!validateSubgrid(x, y, board)){
-					console.log("subgrid", x, y, "is not valid");
-					return false;
+				if(this.original_board[y][x] === null && this.board[y][x] !== null){
+					this.renderer.drawNumber(x, y, this.board[y][x], 'blue');
 				}
 			}
 		}
-		console.log("subgrids valid, check rows and columns");
 	}
 }
