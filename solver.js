@@ -7,6 +7,9 @@ class SudokuSolver{
 		this.row = 0;
 		this.col = 0;
 		this.draw(board);
+		this.permutation = 0;
+		this.startTime;
+		this.completeTime;
 	}
 	getSubgridPosFromCell(x, y){
 		var getPos = n=>n<3?0:n>2&&n<6?1:2;
@@ -55,7 +58,9 @@ class SudokuSolver{
 		}
 	}
 	rewind(){
-		this.board[this.row][this.col] = null;
+		if(!this.isFixedNumber(this.col, this.row)){
+			this.board[this.row][this.col] = null;
+		}
 		if(this.col === 0){
 			this.col = 8;
 			this.row--;
@@ -74,19 +79,22 @@ class SudokuSolver{
 	validateCurrentCell(){
 		return this.validateRow(this.row) && this.validateCol(this.col) && this.validateSubgrid(this.col, this.row);
 	}
-	checkNext(){
+	checkNext(draw){
 		if(null === this.board[this.row][this.col]) this.increment();
 		if(this.validateCurrentCell()){ 
 			this.draw();
 			if(this.col === 8 && this.row === 8) return true;
 			this.advance();
+			this.permutation++;
+			if(draw) this.draw();
 		}else{
-			this.draw();
 			this.increment();
+			this.checkNext();
 		}
 		return false;
 	}
 	draw(){
+		if(!this.renderer) return;
 		this.renderer.draw(this.original_board);
 		for(var y = 0; y<9; y++){
 			for(var x=0; x<9; x++){
@@ -95,5 +103,18 @@ class SudokuSolver{
 				}
 			}
 		}
+	}
+	solve(draw=true, speed=-1, cb){
+		return new Promise(done=>{
+			cb = cb || done;
+			if(!this.startTime) this.startTime = new Date().getTime();
+			if(!this.checkNext(draw)){
+				if(speed > -1) setTimeout(()=>this.solve(draw, speed, cb), speed);
+				else this.solve(draw, speed, cb);
+			}else{
+				this.completeTime = new Date().getTime() - this.startTime;
+				cb();
+			}
+		});
 	}
 }
